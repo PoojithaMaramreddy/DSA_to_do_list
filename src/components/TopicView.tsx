@@ -9,12 +9,17 @@ import {
   Lock,
   Unlock,
   BookOpen,
+  CheckCheck,
+  XCircle,
+  Zap,
 } from 'lucide-react';
 
 interface TopicViewProps {
   topic: Topic;
   progress: UserProgress;
   toggleFundamental: (id: string) => void;
+  checkAllFundamentals: (ids: string[]) => void;
+  clearAllFundamentals: (ids: string[]) => void;
   toggleProblem: (problemId: string) => void;
   setProblemStatus: (problemId: string, status: ProblemStatus) => void;
   incrementRevision: (problemId: string, delta: number) => void;
@@ -31,6 +36,8 @@ export const TopicView: React.FC<TopicViewProps> = ({
   topic,
   progress,
   toggleFundamental,
+  checkAllFundamentals,
+  clearAllFundamentals,
   toggleProblem,
   setProblemStatus,
   incrementRevision,
@@ -52,15 +59,34 @@ export const TopicView: React.FC<TopicViewProps> = ({
     }));
   };
 
+  const completedMap = progress.completedFundamentals || {};
+
+  // Check all fundamentals for this topic
+  const handleCheckAll = () => {
+    const ids = topic.fundamentals.map((f) => f.id);
+    checkAllFundamentals(ids);
+  };
+
+  // Clear all fundamentals for this topic
+  const handleClearAll = () => {
+    const ids = topic.fundamentals.map((f) => f.id);
+    clearAllFundamentals(ids);
+  };
+
   // Fundamentals calculations
   const totalFundamentals = topic.fundamentals.length;
   const completedFundamentalsCount = topic.fundamentals.filter(
-    (f) => progress.completedFundamentals[f.id]
+    (f) => completedMap[f.id]
   ).length;
   const areFundamentalsComplete =
     totalFundamentals > 0 && completedFundamentalsCount === totalFundamentals;
   const fundamentalsPercentage =
     totalFundamentals > 0 ? Math.round((completedFundamentalsCount / totalFundamentals) * 100) : 0;
+
+  // SVG ring for fundamentals progress
+  const ringR = 22;
+  const ringCircumference = 2 * Math.PI * ringR;
+  const ringOffset = ringCircumference - (fundamentalsPercentage / 100) * ringCircumference;
 
   // Topic overall problems calculation
   let topicTotalProblems = 0;
@@ -128,30 +154,94 @@ export const TopicView: React.FC<TopicViewProps> = ({
 
       {/* 🔰 MANDATORY FUNDAMENTALS SECTION */}
       <div className="glass-card p-6 rounded-2xl space-y-4 border border-indigo-500/30 relative overflow-hidden">
-        <div className="flex items-center justify-between border-b border-gray-800 pb-3">
-          <div className="flex items-center gap-2.5">
-            <span className="text-2xl">🔰</span>
+        {/* Background glow when complete */}
+        {areFundamentalsComplete && (
+          <div className="absolute inset-0 bg-emerald-500/5 pointer-events-none rounded-2xl" />
+        )}
+
+        {/* Header Row */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gray-800 pb-4">
+          <div className="flex items-center gap-3">
+            {/* Progress Ring SVG */}
+            <div className="relative flex-shrink-0">
+              <svg width="56" height="56" className="-rotate-90">
+                {/* Background circle */}
+                <circle
+                  cx="28"
+                  cy="28"
+                  r={ringR}
+                  fill="none"
+                  stroke="#1f2937"
+                  strokeWidth="5"
+                />
+                {/* Progress circle */}
+                <circle
+                  cx="28"
+                  cy="28"
+                  r={ringR}
+                  fill="none"
+                  stroke={areFundamentalsComplete ? '#10b981' : '#6366f1'}
+                  strokeWidth="5"
+                  strokeLinecap="round"
+                  strokeDasharray={ringCircumference}
+                  strokeDashoffset={ringOffset}
+                  style={{ transition: 'stroke-dashoffset 0.6s ease, stroke 0.4s ease' }}
+                />
+              </svg>
+              <div className="absolute inset-0 flex items-center justify-center rotate-0">
+                <span
+                  className={`text-[11px] font-bold font-mono ${
+                    areFundamentalsComplete ? 'text-emerald-400' : 'text-indigo-300'
+                  }`}
+                >
+                  {fundamentalsPercentage}%
+                </span>
+              </div>
+            </div>
+
             <div>
               <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                <span className="text-xl">🔰</span>
                 FUNDAMENTALS
-                <span className="text-xs font-normal text-gray-400">
-                  (Must complete before pattern mastery)
-                </span>
               </h3>
               <p className="text-xs text-gray-400">
-                Prerequisite core concepts, traversal algorithms, and complexity analysis.
+                {completedFundamentalsCount} / {totalFundamentals} core concepts mastered
               </p>
             </div>
           </div>
 
-          <div className="text-xs font-mono font-bold text-indigo-300 bg-indigo-950/60 border border-indigo-500/30 px-3 py-1.5 rounded-lg">
-            {completedFundamentalsCount} / {totalFundamentals} Completed ({fundamentalsPercentage}%)
+          {/* Batch Action Buttons */}
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <button
+              onClick={handleCheckAll}
+              disabled={areFundamentalsComplete}
+              title="Check all fundamentals"
+              className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg border transition-all
+                bg-emerald-950/50 text-emerald-300 border-emerald-500/30
+                hover:bg-emerald-900/60 hover:border-emerald-400/50
+                disabled:opacity-30 disabled:cursor-not-allowed active:scale-95"
+            >
+              <CheckCheck className="w-3.5 h-3.5" />
+              Check All
+            </button>
+            <button
+              onClick={handleClearAll}
+              disabled={completedFundamentalsCount === 0}
+              title="Clear all fundamentals"
+              className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg border transition-all
+                bg-red-950/40 text-red-400 border-red-500/30
+                hover:bg-red-900/40 hover:border-red-400/50
+                disabled:opacity-30 disabled:cursor-not-allowed active:scale-95"
+            >
+              <XCircle className="w-3.5 h-3.5" />
+              Clear
+            </button>
           </div>
         </div>
 
         {/* Lock / Unlock Banner */}
         <div
-          className={`p-3 rounded-xl border text-xs font-medium flex items-center gap-2.5 transition ${
+          className={`p-3 rounded-xl border text-xs font-medium flex items-center gap-2.5 transition-all ${
             areFundamentalsComplete
               ? 'bg-emerald-950/40 border-emerald-500/40 text-emerald-300'
               : 'bg-amber-950/40 border-amber-500/40 text-amber-300'
@@ -159,7 +249,7 @@ export const TopicView: React.FC<TopicViewProps> = ({
         >
           {areFundamentalsComplete ? (
             <>
-              <Unlock className="w-4 h-4 text-emerald-400 shrink-0" />
+              <Zap className="w-4 h-4 text-emerald-400 shrink-0" />
               <span>
                 <strong>All Fundamentals Mastered!</strong> Pattern section problem solving is now fully unlocked for {topic.title}.
               </span>
@@ -174,51 +264,75 @@ export const TopicView: React.FC<TopicViewProps> = ({
           )}
         </div>
 
-        {/* Checklist Grid */}
+        {/* ✅ Checklist Grid — Interactive Fundamentals */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 pt-1">
           {topic.fundamentals.map((fund) => {
-            const isChecked = progress.completedFundamentals[fund.id] || false;
+            const isChecked = !!completedMap[fund.id];
 
             return (
               <label
                 key={fund.id}
-                onClick={() => toggleFundamental(fund.id)}
-                className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer select-none transition-all ${
-                  isChecked
-                    ? 'bg-emerald-950/20 border-emerald-500/40 text-emerald-200'
-                    : 'bg-gray-900/60 hover:bg-gray-900 border-gray-800 text-gray-300'
-                }`}
-              >
-                <input
-                  type="checkbox"
-                  checked={isChecked}
-                  onChange={() => {}} // Handled by parent container click
-                  className="hidden"
-                />
-                <div
-                  className={`mt-0.5 w-4 h-4 rounded border flex items-center justify-center shrink-0 transition ${
+                className={`
+                  group flex items-start justify-between gap-3 p-3.5 rounded-xl border
+                  cursor-pointer select-none text-left w-full
+                  transition-all duration-200
+                  ${
                     isChecked
-                      ? 'bg-emerald-500 border-emerald-400 text-black font-bold'
-                      : 'border-gray-700 bg-gray-950'
-                  }`}
-                >
-                  {isChecked && <CheckCircle2 className="w-3.5 h-3.5 stroke-[3]" />}
+                      ? 'bg-emerald-950/40 border-emerald-500/60 shadow-[0_0_14px_rgba(16,185,129,0.2)] hover:bg-emerald-950/60'
+                      : 'bg-gray-900/60 border-gray-800 hover:bg-gray-900 hover:border-indigo-500/40 hover:shadow-[0_0_10px_rgba(99,102,241,0.12)]'
+                  }
+                `}
+              >
+                <div className="flex items-start gap-3 min-w-0 flex-1">
+                  {/* Native Controlled Checkbox */}
+                  <input
+                    type="checkbox"
+                    checked={isChecked}
+                    onChange={() => toggleFundamental(fund.id)}
+                    className="mt-0.5 w-4 h-4 rounded border-gray-600 bg-gray-950 text-emerald-500 focus:ring-emerald-500 focus:ring-offset-gray-900 accent-emerald-500 shrink-0 cursor-pointer"
+                  />
+
+                  {/* Text Content */}
+                  <div className="space-y-0.5 min-w-0 flex-1">
+                    <span
+                      className={`text-xs font-bold block transition-all duration-200 ${
+                        isChecked
+                          ? 'line-through text-emerald-300'
+                          : 'text-gray-100 group-hover:text-white'
+                      }`}
+                    >
+                      {fund.title}
+                    </span>
+                    {fund.description && (
+                      <span
+                        className={`text-[11px] block leading-tight transition-colors duration-200 ${
+                          isChecked ? 'text-gray-400' : 'text-gray-500'
+                        }`}
+                      >
+                        {fund.description}
+                      </span>
+                    )}
+                  </div>
                 </div>
 
-                <div className="space-y-0.5">
-                  <span className={`text-xs font-semibold block ${isChecked ? 'line-through opacity-80' : ''}`}>
-                    {fund.title}
+                {/* Visible Done Badge */}
+                {isChecked && (
+                  <span className="text-[10px] font-extrabold text-emerald-300 bg-emerald-500/20 border border-emerald-500/40 px-2 py-0.5 rounded-full shrink-0 self-center">
+                    Done ✓
                   </span>
-                  {fund.description && (
-                    <span className="text-[11px] text-gray-400 block leading-tight">
-                      {fund.description}
-                    </span>
-                  )}
-                </div>
+                )}
               </label>
             );
           })}
         </div>
+
+        {/* Completion celebration row */}
+        {areFundamentalsComplete && (
+          <div className="pt-2 flex items-center justify-center gap-2 text-emerald-400 text-xs font-semibold animate-pulse">
+            <CheckCircle2 className="w-4 h-4" />
+            <span>🎉 All fundamentals complete! You're ready for pattern mastery.</span>
+          </div>
+        )}
       </div>
 
       {/* PATTERN SECTIONS */}

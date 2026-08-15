@@ -14,6 +14,8 @@ export function App() {
     progress,
     statistics,
     toggleFundamental,
+    checkAllFundamentals,
+    clearAllFundamentals,
     toggleProblem,
     setProblemStatus,
     incrementRevision,
@@ -135,6 +137,8 @@ export function App() {
             topic={activeTopic}
             progress={progress}
             toggleFundamental={toggleFundamental}
+            checkAllFundamentals={checkAllFundamentals}
+            clearAllFundamentals={clearAllFundamentals}
             toggleProblem={toggleProblem}
             setProblemStatus={setProblemStatus}
             incrementRevision={incrementRevision}

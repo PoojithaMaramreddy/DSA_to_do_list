@@ -52,6 +52,13 @@ export function useDSAProgress() {
         return {
           ...initialProgress,
           ...parsed,
+          completedFundamentals: (parsed.completedFundamentals && typeof parsed.completedFundamentals === 'object') ? parsed.completedFundamentals : {},
+          completedProblems: (parsed.completedProblems && typeof parsed.completedProblems === 'object') ? parsed.completedProblems : {},
+          problemStatus: (parsed.problemStatus && typeof parsed.problemStatus === 'object') ? parsed.problemStatus : {},
+          revisionCounts: (parsed.revisionCounts && typeof parsed.revisionCounts === 'object') ? parsed.revisionCounts : {},
+          favorites: (parsed.favorites && typeof parsed.favorites === 'object') ? parsed.favorites : {},
+          problemNotes: (parsed.problemNotes && typeof parsed.problemNotes === 'object') ? parsed.problemNotes : {},
+          patternNotes: (parsed.patternNotes && typeof parsed.patternNotes === 'object') ? parsed.patternNotes : {},
           dailyStreak: streak,
           lastActiveDate: today,
         };
@@ -87,14 +94,42 @@ export function useDSAProgress() {
 
   const toggleFundamental = (id: string) => {
     setProgress((prev) => {
-      const updated = !prev.completedFundamentals[id];
+      const map = prev.completedFundamentals || {};
+      const updated = !map[id];
       if (updated) triggerConfetti();
       return {
         ...prev,
         completedFundamentals: {
-          ...prev.completedFundamentals,
+          ...map,
           [id]: updated,
         },
+      };
+    });
+  };
+
+  const checkAllFundamentals = (fundamentalIds: string[]) => {
+    setProgress((prev) => {
+      const map = { ...(prev.completedFundamentals || {}) };
+      fundamentalIds.forEach((id) => {
+        map[id] = true;
+      });
+      triggerConfetti();
+      return {
+        ...prev,
+        completedFundamentals: map,
+      };
+    });
+  };
+
+  const clearAllFundamentals = (fundamentalIds: string[]) => {
+    setProgress((prev) => {
+      const map = { ...(prev.completedFundamentals || {}) };
+      fundamentalIds.forEach((id) => {
+        delete map[id];
+      });
+      return {
+        ...prev,
+        completedFundamentals: map,
       };
     });
   };
@@ -334,6 +369,8 @@ export function useDSAProgress() {
     progress,
     statistics,
     toggleFundamental,
+    checkAllFundamentals,
+    clearAllFundamentals,
     toggleProblem,
     setProblemStatus,
     incrementRevision,
