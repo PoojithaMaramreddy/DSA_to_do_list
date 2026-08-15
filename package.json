@@ -1,7 +1,7 @@
 {
-  "name": "dsa-to-do",
-  "private": true,
-  "version": "0.0.0",
+  "name": "dsa-to-do-list",
+  "private": false,
+  "version": "1.0.1",
   "type": "module",
   "scripts": {
     "dev": "vite",
